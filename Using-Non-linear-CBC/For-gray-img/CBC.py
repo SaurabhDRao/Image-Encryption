@@ -1,22 +1,52 @@
 from DES import applyDES
 from utils import xor, splitIntoParts
+from threading import Thread
 
 ENCRYPT = "ENCRYPT"
 DECRYPT = "DECRYPT"
+res = {}
+
+def callDES(text, key, mode, index):
+    r = applyDES(text, key, mode)
+    res[index] = r
 
 # a mehtod to perform encryption
 def CBCEncryptRound(firstHalfFeedback, lastHalfFeedback, firstHalfText, lastHalfText, iv1, iv2, DESKey1, DESKey2):
     # apply des for the two halves of the feedback
-    firstHalfRes = applyDES(firstHalfFeedback, DESKey1, ENCRYPT)
-    lastHalfRes = applyDES(lastHalfFeedback, DESKey2, ENCRYPT)
+    # firstHalfRes = applyDES(firstHalfFeedback, DESKey1, ENCRYPT)
+    # lastHalfRes = applyDES(lastHalfFeedback, DESKey2, ENCRYPT)
+    threads = [None] * 2
+    args = [[firstHalfFeedback, DESKey1, ENCRYPT], [lastHalfFeedback, DESKey2, ENCRYPT]]
+    for i in range(2):
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i].start()
+    for i in range(2):
+        threads[i].join()
+    firstHalfRes = res[0]
+    lastHalfRes = res[1]
+    res.clear()
+    threads.clear()
+    args.clear()
     
     # xor the two des results with a half of the plain text
     firstHalfCipher = xor(firstHalfText, firstHalfRes, 64)
     lastHalfCipher = xor(lastHalfText, lastHalfRes, 64)
 
     # apply des for the xor'd results
-    lastCipher = applyDES(firstHalfCipher, DESKey2, ENCRYPT)
-    firstCipher = applyDES(lastHalfCipher, DESKey1, ENCRYPT)
+    # lastCipher = applyDES(firstHalfCipher, DESKey2, ENCRYPT)
+    # firstCipher = applyDES(lastHalfCipher, DESKey1, ENCRYPT)
+    threads = [None] * 2
+    args = [[firstHalfCipher, DESKey2, ENCRYPT], [lastHalfCipher, DESKey1, ENCRYPT]]
+    for i in range(2):
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i].start()
+    for i in range(2):
+        threads[i].join()
+    lastCipher = res[0]
+    firstCipher = res[1]
+    res.clear()
+    threads.clear()
+    args.clear()
 
     # xor the result of des with a half of the initial vector
     firstCipher = xor(firstCipher, iv1, 64)
@@ -32,12 +62,36 @@ def CBCDecryptRound(firstHalfFeedback, lastHalfFeedback, firstHalfCipher, lastHa
     lastHalfCipher = xor(lastHalfCipher, iv2, 64)
 
     # apply des for the two halves of cipher text in decryption mode
-    firstHalfRes1 = applyDES(firstHalfCipher, DESKey1, DECRYPT)
-    lastHalfRes1 = applyDES(lastHalfCipher, DESKey2, DECRYPT)
+    # firstHalfRes1 = applyDES(firstHalfCipher, DESKey1, DECRYPT)
+    # lastHalfRes1 = applyDES(lastHalfCipher, DESKey2, DECRYPT)
+    threads = [None] * 2
+    args = [[firstHalfCipher, DESKey1, DECRYPT], [lastHalfCipher, DESKey2, DECRYPT]]
+    for i in range(2):
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i].start()
+    for i in range(2):
+        threads[i].join()
+    firstHalfRes1 = res[0]
+    lastHalfRes1 = res[1]
+    res.clear()
+    threads.clear()
+    args.clear()
 
     # apply des for the two halves of the feedback in encryption mode
-    firstHalfRes2 = applyDES(lastHalfFeedback, DESKey1, ENCRYPT)
-    lastHalfRes2 = applyDES(firstHalfFeedback, DESKey2, ENCRYPT)
+    # firstHalfRes2 = applyDES(lastHalfFeedback, DESKey1, ENCRYPT)
+    # lastHalfRes2 = applyDES(firstHalfFeedback, DESKey2, ENCRYPT)
+    threads = [None] * 2
+    args = [[lastHalfFeedback, DESKey1, ENCRYPT], [firstHalfFeedback, DESKey2, ENCRYPT]]
+    for i in range(2):
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i].start()
+    for i in range(2):
+        threads[i].join()
+    firstHalfRes2 = res[0]
+    lastHalfRes2 = res[1]
+    res.clear()
+    threads.clear()
+    args.clear()
 
     # cross xor the halves the two des results
     firstHalfText = xor(firstHalfRes2, lastHalfRes1, 64)

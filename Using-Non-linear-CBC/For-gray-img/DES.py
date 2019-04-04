@@ -1,4 +1,3 @@
-from DESKey import generateKeys
 from utils import xor, splitIntoParts
 
 # fr initial permutation
@@ -149,13 +148,7 @@ def finalPermutation(text):
     return "".join([text[i-1] for i in fp])
 
 # the des function
-def applyDES(text, key, action):
-    # first generate all keys
-    keys = generateKeys(key)
-    # if decryption then reverse the list of generated keys
-    if(action == "DECRYPT"):
-        keys = keys[::-1]
-
+def applyDES(text, keys):
     # first perform the initial permutation
     res = initialPermutation(text)
     # then apply the fiestal rounds 15 times

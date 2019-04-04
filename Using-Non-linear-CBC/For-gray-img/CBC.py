@@ -1,13 +1,14 @@
 from DES import applyDES
 from utils import xor, splitIntoParts
 from threading import Thread
+from DESKey import generateKeys
 
 ENCRYPT = "ENCRYPT"
 DECRYPT = "DECRYPT"
 res = {}
 
-def callDES(text, key, mode, index):
-    r = applyDES(text, key, mode)
+def callDES(text, key, index):
+    r = applyDES(text, key)
     res[index] = r
 
 # a mehtod to perform encryption
@@ -16,9 +17,9 @@ def CBCEncryptRound(firstHalfFeedback, lastHalfFeedback, firstHalfText, lastHalf
     # firstHalfRes = applyDES(firstHalfFeedback, DESKey1, ENCRYPT)
     # lastHalfRes = applyDES(lastHalfFeedback, DESKey2, ENCRYPT)
     threads = [None] * 2
-    args = [[firstHalfFeedback, DESKey1, ENCRYPT], [lastHalfFeedback, DESKey2, ENCRYPT]]
+    args = [[firstHalfFeedback, DESKey1], [lastHalfFeedback, DESKey2]]
     for i in range(2):
-        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], i))
         threads[i].start()
     for i in range(2):
         threads[i].join()
@@ -36,9 +37,9 @@ def CBCEncryptRound(firstHalfFeedback, lastHalfFeedback, firstHalfText, lastHalf
     # lastCipher = applyDES(firstHalfCipher, DESKey2, ENCRYPT)
     # firstCipher = applyDES(lastHalfCipher, DESKey1, ENCRYPT)
     threads = [None] * 2
-    args = [[firstHalfCipher, DESKey2, ENCRYPT], [lastHalfCipher, DESKey1, ENCRYPT]]
+    args = [[firstHalfCipher, DESKey2], [lastHalfCipher, DESKey1]]
     for i in range(2):
-        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], i))
         threads[i].start()
     for i in range(2):
         threads[i].join()
@@ -65,9 +66,9 @@ def CBCDecryptRound(firstHalfFeedback, lastHalfFeedback, firstHalfCipher, lastHa
     # firstHalfRes1 = applyDES(firstHalfCipher, DESKey1, DECRYPT)
     # lastHalfRes1 = applyDES(lastHalfCipher, DESKey2, DECRYPT)
     threads = [None] * 2
-    args = [[firstHalfCipher, DESKey1, DECRYPT], [lastHalfCipher, DESKey2, DECRYPT]]
+    args = [[firstHalfCipher, DESKey1[::-1]], [lastHalfCipher, DESKey2[::-1]]]
     for i in range(2):
-        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], i))
         threads[i].start()
     for i in range(2):
         threads[i].join()
@@ -81,9 +82,9 @@ def CBCDecryptRound(firstHalfFeedback, lastHalfFeedback, firstHalfCipher, lastHa
     # firstHalfRes2 = applyDES(lastHalfFeedback, DESKey1, ENCRYPT)
     # lastHalfRes2 = applyDES(firstHalfFeedback, DESKey2, ENCRYPT)
     threads = [None] * 2
-    args = [[lastHalfFeedback, DESKey1, ENCRYPT], [firstHalfFeedback, DESKey2, ENCRYPT]]
+    args = [[lastHalfFeedback, DESKey1], [firstHalfFeedback, DESKey2]]
     for i in range(2):
-        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], args[i][2], i))
+        threads[i] = Thread(target = callDES, args = (args[i][0], args[i][1], i))
         threads[i].start()
     for i in range(2):
         threads[i].join()
@@ -106,6 +107,9 @@ def applyCBC(text, DESKey1, DESKey2, inititalVector, mode):
 
     # divide the text into blocks each of size 128 bits
     textIntoParts = splitIntoParts(text, 128)
+    # first generate all keys
+    DESKey1 = generateKeys(DESKey1)
+    DESKey2 = generateKeys(DESKey2)
 
     # split the inititalVector into 2 halves each of 64bit length
     firstHalf = inititalVector[:64]
